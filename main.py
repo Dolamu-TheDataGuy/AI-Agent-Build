@@ -11,6 +11,7 @@ def main():
     load_dotenv()
 
     args = sys.argv[1:]
+    # print(args)
 
     if not args:
         print("AI Code Assistant")
