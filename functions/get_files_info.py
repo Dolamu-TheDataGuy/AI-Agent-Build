@@ -30,7 +30,7 @@ def get_files_info(working_directory, directory=None):
         return str.strip()
 
     except Exception as e:
-        return f"Error: {str(e)}"
+        return f"Error listing files: {str(e)}"
 
 
 schema_get_files_info = types.FunctionDeclaration(

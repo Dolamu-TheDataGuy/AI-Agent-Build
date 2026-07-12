@@ -7,3 +7,4 @@ uv.lock
 Dockerfile
 compose.yaml
 .dockerignore
+Openai.py
