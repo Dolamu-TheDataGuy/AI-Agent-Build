@@ -2,36 +2,47 @@ import os
 import subprocess
 from google.genai import types
 
-def run_python_file(working_directory, file_path, args=[]):
-    abs_working_dir = os.path.abspath(working_directory)
-    abs_file_path = os.path.abspath(os.path.join(working_directory, file_path))
-
-    if not abs_file_path.startswith(abs_working_dir):
-        return f'Error: Cannot execute "{file_path}" as it is outside the permitted working directory'
-
-    if not os.path.exists(abs_file_path):
-        return f'Error: File "{file_path}" not found'
-
-    if not abs_file_path.endswith(".py"):
-        f'Error: "{file_path}" is not a Python file.'
-
+def run_python_file(working_directory: str, file_path: str, args: list[str] | None = None) -> str:
     try:
+        abs_working_dir = os.path.abspath(working_directory)
+        abs_file_path = os.path.abspath(os.path.join(working_directory, file_path))
+
+        if not abs_file_path.startswith(abs_working_dir):
+            return f'Error: Cannot execute "{file_path}" as it is outside the permitted working directory'
+
+        if not os.path.isfile(abs_file_path):
+            return f'Error: File "{file_path}" does not exist or is not a regular file'
+
+        if not abs_file_path.endswith(".py"):
+            return f'Error: "{file_path}" is not a Python file.'
+
+
         # if args:
         #     result = subprocess.run(["python3", abs_file_path, *args], check=True, timeout=30)
         # else:
         #     result = subprocess.run(["python3", abs_file_path], check=True, timeout=30)
 
         command = ["python3", abs_file_path, *args] if args else ["python3", abs_file_path]
-        result = subprocess.run(command, check=True, timeout=30, cwd=abs_working_dir)
+        result = subprocess.run(
+            command,
+            text=True,
+            capture_output=True,
+            timeout=30,
+            cwd=abs_working_dir)
 
-        print(f"STDOUT: {result.stdout}")
-        print(f"STDERR: {result.stderr}")
-
+        # print(f"STDOUT: {result.stdout}")
+        # print(f"STDERR: {result.stderr}")
+        
+        output: list[str] = []
         if result.returncode != 0:
-            return f"Error: Python script exited with code {result.returncode}"
-
-        if not result.stdout:
-            return "No output produced"
+            output.append(f"Process exited with code {result.returncode}")
+        if not result.stdout and not result.stderr:
+            output.append("No output produced")
+        if result.stdout:
+            output.append(f"STDOUT:\n{result.stdout}")
+        if result.stderr:
+            output.append(f"STDERR:\n{result.stderr}")
+        return "\n".join(output)
 
     except Exception as e:
         return f"Error executing Python file: {str(e)}"
