@@ -1,4 +1,4 @@
-from functions.write_files import write_file
+from functions.write_file import write_file
 
 
 def test() -> None:

@@ -2,7 +2,7 @@
 
 > A minimal, from-scratch AI coding agent: an LLM given *hands*. It reasons about a task, calls tools to act on a real codebase, observes the results, and repeats until the job is done.
 
-Built with LLMs served through the [OpenRouter](https://openrouter.ai) API, a small set of Python tools/functions, and a bundled **calculator** application as the codebase the agent operates on.
+Built with LLMs served through the [OpenRouter](https://openrouter.ai){:target="_blank"} API, a small set of Python tools/functions, and a bundled **calculator** application as the codebase the agent operates on.
 
 ---
 
@@ -45,7 +45,7 @@ Build the definition up in layers:
 3. **An agent has access to tools.** It can reach into the outside world and search, call APIs, send email, run code and take in feedback, and act again.
 The common thread is a loop: perceive, decide, act, observe the result, and repeat.
  
-## So what is an AI agent?
+## So what is an AI Agent?
  
 Put the two together. An **AI agent** is an agent whose decision-making brain is an AI model:
  
