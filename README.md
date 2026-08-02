@@ -2,7 +2,7 @@
 
 > A minimal, from-scratch AI coding agent: an LLM given *hands*. It reasons about a task, calls tools to act on a real codebase, observes the results, and repeats until the job is done.
 
-Built with LLMs served through the [OpenRouter](https://openrouter.ai){:target="_blank"} API, a small set of Python tools/functions, and a bundled **calculator** application as the codebase the agent operates on.
+Built with LLMs served through the [OpenRouter](https://openrouter.ai) API, a small set of Python tools/functions, and a bundled **calculator** application as the codebase the agent operates on.
 
 ---
 
