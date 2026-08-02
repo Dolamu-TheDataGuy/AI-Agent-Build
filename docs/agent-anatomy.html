@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Anatomy of an AI Agent — interactive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Shantell+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --board:#f7f7f1;
+    --ink:#1f2a37;
+    --muted:#5b6672;
+    --line:#c9c7bb;
+    --perception:#2f8fd6;
+    --memory:#1f9d6b;
+    --planning:#cf9200;
+    --tools:#e0533d;
+    --agent:#12a37a;
+    --brain:#7b5ea7;
+    --reflective:#2f8fd6;
+    --interactive:#2b3d6b;
+    --proactive:#1f9d6b;
+    --autonomous:#2b3d6b;
+    --font-hand:'Shantell Sans', ui-rounded, 'Comic Sans MS', cursive;
+    --font-body:'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  }
+
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; }
+  body{
+    font-family:var(--font-body);
+    color:var(--ink);
+    background:
+      radial-gradient(circle at 1px 1px, rgba(30,40,55,.055) 1px, transparent 0) 0 0 / 26px 26px,
+      var(--board);
+    -webkit-font-smoothing:antialiased;
+    line-height:1.5;
+  }
+
+  .wrap{ max-width:1180px; margin:0 auto; padding:28px 20px 56px; }
+
+  header.masthead{ margin-bottom:10px; }
+  .eyebrow{
+    font-family:var(--font-hand);
+    font-weight:600;
+    font-size:1.15rem;
+    color:var(--brain);
+    letter-spacing:.2px;
+  }
+  h1{
+    font-family:var(--font-hand);
+    font-weight:700;
+    font-size:clamp(2.1rem, 5vw, 3rem);
+    line-height:1.05;
+    margin:.1em 0 .2em;
+    color:var(--ink);
+  }
+  .sub{ color:var(--muted); font-size:1rem; max-width:62ch; margin:0; }
+  .controls{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-top:16px; }
+  .hint{
+    display:inline-flex; align-items:center; gap:.5em;
+    color:var(--muted);
+    font-family:var(--font-hand); font-size:1.05rem; font-weight:500;
+  }
+  .hint .dot{ width:9px;height:9px;border-radius:50%;background:var(--tools);
+    box-shadow:0 0 0 0 rgba(224,83,61,.5); animation:pulse 2s infinite; }
+  @keyframes pulse{
+    0%{box-shadow:0 0 0 0 rgba(224,83,61,.45);}
+    70%{box-shadow:0 0 0 10px rgba(224,83,61,0);}
+    100%{box-shadow:0 0 0 0 rgba(224,83,61,0);}
+  }
+  .reset{
+    font-family:var(--font-body); font-size:.82rem; font-weight:500;
+    color:var(--muted); background:#fff;
+    border:1.5px solid var(--line); border-radius:999px;
+    padding:5px 13px; cursor:pointer; transition:all .15s ease;
+  }
+  .reset:hover{ color:var(--ink); border-color:var(--muted); }
+  .reset:focus-visible{ outline:2px solid var(--brain); outline-offset:2px; }
+
+  .stage{
+    display:grid;
+    grid-template-columns: 1.1fr .9fr;
+    gap:26px;
+    align-items:start;
+    margin-top:20px;
+  }
+  @media (max-width: 880px){
+    .stage{ grid-template-columns:1fr; }
+  }
+
+  .board-card{
+    background:rgba(255,255,255,.55);
+    border:1.5px solid var(--line);
+    border-radius:18px;
+    padding:8px 8px 4px;
+    box-shadow:0 1px 0 rgba(255,255,255,.7) inset, 0 8px 30px rgba(30,40,55,.06);
+  }
+  svg.diagram{ width:100%; height:auto; display:block; touch-action:manipulation; }
+
+  /* nodes */
+  .node, .tag{ cursor:pointer; }
+  .node rect{
+    fill:#ffffff;
+    stroke:var(--c);
+    stroke-width:3;
+    transition:filter .18s ease, fill .18s ease, stroke-width .18s ease;
+  }
+  .node .lbl{ fill:var(--c); font-family:var(--font-hand); font-weight:700; }
+  .node:hover rect{ fill:color-mix(in srgb, var(--c) 12%, #fff); filter:drop-shadow(0 6px 10px rgba(30,40,55,.16)); }
+  .node.sel rect{ fill:color-mix(in srgb, var(--c) 16%, #fff); stroke-width:4.5; filter:drop-shadow(0 7px 12px rgba(30,40,55,.20)); }
+  .node:focus-visible rect{ outline:3px solid color-mix(in srgb, var(--c) 55%, #000); outline-offset:3px; }
+
+  .tag text{ font-family:var(--font-hand); }
+  .tag .tlbl{ fill:var(--c); font-weight:700; }
+  .tag .tsub{ fill:var(--muted); font-weight:500; }
+  .tag:hover .tlbl{ text-decoration:underline; }
+  .tag.sel .tlbl{ fill:color-mix(in srgb, var(--c) 72%, #000); }
+  .tag:focus-visible{ outline:none; }
+  .tag:focus-visible .halo{ opacity:1; }
+  .halo{ opacity:0; }
+
+  .conn{ stroke-width:3; fill:none; stroke-linecap:round; transition:stroke-width .18s ease, filter .18s ease, opacity .2s ease; }
+  .conn.hot{ stroke-width:5.5; filter:drop-shadow(0 2px 5px rgba(30,40,55,.28)); }
+  .brainbox{ fill:none; stroke:var(--memory); stroke-width:2.5; stroke-dasharray:9 8; opacity:.8; }
+  .brainlabel{ font-family:var(--font-hand); fill:var(--brain); font-weight:700; }
+
+  .diagram.has-sel .node:not(.sel){ opacity:.38; }
+  .diagram.has-sel .tag:not(.sel){ opacity:.38; }
+  .diagram.has-sel .conn:not(.hot){ opacity:.3; }
+  .node, .tag{ transition:opacity .2s ease; }
+
+  @media (prefers-reduced-motion: no-preference){
+    .node, .tag{ opacity:0; animation:rise .5s ease forwards; }
+    .conn{ stroke-dasharray:620; stroke-dashoffset:620; animation:draw 1s ease forwards; }
+    .brainbox{ opacity:0; animation:fade .8s ease .15s forwards; }
+    @keyframes rise{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;} }
+    @keyframes draw{ to{ stroke-dashoffset:0; } }
+    @keyframes fade{ to{ opacity:.8; } }
+    .n1{animation-delay:.05s}.n2{animation-delay:.15s}.n3{animation-delay:.25s}
+    .n4{animation-delay:.35s}.n5{animation-delay:.45s}
+    .t1{animation-delay:.55s}.t2{animation-delay:.62s}.t3{animation-delay:.69s}.t4{animation-delay:.76s}
+  }
+
+  /* panel */
+  .panel{
+    background:#fff;
+    border:1.5px solid var(--line);
+    border-radius:18px;
+    padding:22px 22px 24px;
+    box-shadow:0 8px 30px rgba(30,40,55,.07);
+    min-height:360px;
+    position:sticky; top:18px;
+  }
+  @media (max-width: 880px){ .panel{ position:static; } }
+  .pi{ animation:swap .28s ease; }
+  @keyframes swap{ from{opacity:0; transform:translateY(7px);} to{opacity:1; transform:none;} }
+
+  .panel .kicker{
+    display:inline-block;
+    font-family:var(--font-hand); font-weight:600;
+    font-size:1.05rem;
+    padding:1px 13px;
+    border-radius:999px;
+    color:#fff;
+    background:var(--pc, var(--brain));
+    margin-bottom:9px;
+  }
+  .panel h2{
+    font-family:var(--font-hand);
+    font-size:1.85rem; font-weight:700;
+    margin:.05em 0 .35em; color:var(--ink);
+  }
+  .panel .essence{ color:var(--ink); font-size:1.02rem; line-height:1.55; margin:0 0 4px; }
+  .lead-in{ color:var(--muted); font-size:.74rem; text-transform:uppercase; letter-spacing:.13em; margin:18px 0 9px; font-weight:600; }
+
+  /* internal breakdown */
+  .subwrap{
+    border:2px dashed color-mix(in srgb, var(--pc) 50%, #fff);
+    border-radius:14px; padding:12px 12px 14px;
+    background:color-mix(in srgb, var(--pc) 5%, #fff);
+  }
+  .submeta{
+    font-family:var(--font-hand); font-weight:600;
+    color:color-mix(in srgb, var(--pc) 72%, #000);
+    font-size:1.15rem; margin:12px 2px 7px;
+  }
+  .submeta:first-child{ margin-top:0; }
+  .subgrid{ display:flex; flex-direction:column; gap:7px; }
+  .subbox{
+    display:flex; align-items:center; gap:10px;
+    border:2px solid var(--pc); border-radius:9px;
+    padding:6px 12px; background:#fff;
+    font-family:var(--font-hand); font-weight:500; font-size:1.1rem;
+    color:color-mix(in srgb, var(--pc) 80%, #000);
+  }
+  .subbox.off{ border-style:dashed; opacity:.7; }
+  .subbox .txt{ line-height:1.1; }
+  .subbox em{ margin-left:auto; font-family:var(--font-body); font-style:normal; font-size:.72rem; color:var(--muted); text-align:right; }
+  .sdot{ width:11px; height:11px; border-radius:50%; flex:0 0 auto; }
+  .sdot.on{ background:var(--pc); box-shadow:0 0 0 2px color-mix(in srgb, var(--pc) 25%, #fff); }
+  .sdot.off{ background:#fff; border:2px solid color-mix(in srgb, var(--pc) 45%, #fff); }
+  .subrole{ margin-top:11px; }
+  .subrole .cap{ font-size:.7rem; text-transform:uppercase; letter-spacing:.11em; color:var(--muted); margin-bottom:6px; font-weight:600; }
+  .sublegend{ display:flex; gap:18px; margin-top:11px; font-size:.75rem; color:var(--muted); align-items:center; }
+  .sublegend span{ display:inline-flex; align-items:center; gap:6px; }
+
+  .repo{
+    margin-top:6px; padding:13px 15px; border-radius:12px;
+    background:#0f1720; color:#e7ecf2; font-size:.9rem; line-height:1.5;
+  }
+  .repo b{ color:#fff; }
+  .repo code{
+    font-family:ui-monospace, SFMono-Regular, Menlo, monospace;
+    background:rgba(255,255,255,.10); padding:1px 6px; border-radius:5px;
+    font-size:.85em; color:#a8e6cf;
+  }
+  .panel .placeholder{ color:var(--muted); font-size:1rem; line-height:1.6; }
+  .legend{ margin-top:16px; display:flex; flex-wrap:wrap; gap:12px 18px; font-size:.82rem; color:var(--muted); }
+  .legend span{ display:inline-flex; align-items:center; gap:7px; }
+  .legend i{ width:12px; height:12px; border-radius:3px; border:2px solid; display:inline-block; }
+  footer.note{ margin-top:26px; color:var(--muted); font-size:.85rem; }
+  footer.note a{ color:var(--interactive); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="masthead">
+    <div class="eyebrow">the brain, drawn out</div>
+    <h1>Anatomy of an AI Agent</h1>
+    <p class="sub">An AI agent is a foundation model (the brain) wrapped in four faculties — it <b>perceives</b>, <b>plans</b>, <b>remembers</b>, and <b>acts</b> — and behaves with four traits that make it feel alive.</p>
+    <div class="controls">
+      <span class="hint"><span class="dot"></span> Tap any part of the agent to open it up</span>
+      <button class="reset" id="reset" type="button">↺ Overview</button>
+    </div>
+  </header>
+
+  <div class="stage">
+    <!-- DIAGRAM -->
+    <div class="board-card">
+      <svg class="diagram" viewBox="0 0 720 660" role="group" aria-label="Interactive AI agent anatomy diagram">
+        <defs>
+          <marker id="a-mem"  markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#1f9d6b"/></marker>
+          <marker id="a-plan" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#cf9200"/></marker>
+          <marker id="a-perc" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#2f8fd6"/></marker>
+          <marker id="a-tool" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#e0533d"/></marker>
+          <marker id="a-green" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#1f9d6b"/></marker>
+        </defs>
+
+        <!-- dashed brain boundary -->
+        <rect class="brainbox" x="271" y="112" width="178" height="446" rx="16"/>
+        <text class="brainlabel" x="360" y="546" text-anchor="middle" font-size="23">Brain</text>
+
+        <!-- core connectors -->
+        <path class="conn" data-key="memory"     d="M360,300 L360,196" stroke="#1f9d6b" marker-end="url(#a-mem)"/>
+        <path class="conn" data-key="planning"   d="M360,364 L360,468" stroke="#cf9200" marker-end="url(#a-plan)"/>
+        <path class="conn" data-key="perception" d="M278,332 L221,332" stroke="#2f8fd6" marker-end="url(#a-perc)"/>
+        <path class="conn" data-key="tools"      d="M442,332 L499,332" stroke="#e0533d" marker-end="url(#a-tool)"/>
+
+        <!-- characteristic arrows -->
+        <path class="conn" data-key="reflective"  d="M300,150 L176,84"  stroke="#1f9d6b" marker-end="url(#a-green)"/>
+        <path class="conn" data-key="interactive" d="M420,150 L560,84"  stroke="#1f9d6b" marker-end="url(#a-green)"/>
+        <path class="conn" data-key="proactive"   d="M300,516 L176,596" stroke="#1f9d6b" marker-end="url(#a-green)"/>
+        <path class="conn" data-key="autonomous"  d="M420,516 L560,596" stroke="#1f9d6b" marker-end="url(#a-green)"/>
+
+        <!-- CORE NODES -->
+        <g class="node n3" data-key="memory" tabindex="0" role="button" aria-label="Memory" style="--c:var(--memory)">
+          <rect x="285" y="134" width="150" height="56" rx="11"/>
+          <text class="lbl" x="360" y="169" text-anchor="middle" font-size="26" textLength="96" lengthAdjust="spacingAndGlyphs">Memory</text>
+        </g>
+
+        <g class="node n1" data-key="agent" tabindex="0" role="button" aria-label="AI Agent, the brain" style="--c:var(--agent)">
+          <rect x="278" y="300" width="164" height="64" rx="12"/>
+          <text class="lbl" x="360" y="340" text-anchor="middle" font-size="27" textLength="118" lengthAdjust="spacingAndGlyphs">AI Agent</text>
+        </g>
+
+        <g class="node n4" data-key="planning" tabindex="0" role="button" aria-label="Planning" style="--c:var(--planning)">
+          <rect x="285" y="470" width="150" height="56" rx="11"/>
+          <text class="lbl" x="360" y="505" text-anchor="middle" font-size="26" textLength="104" lengthAdjust="spacingAndGlyphs">Planning</text>
+        </g>
+
+        <g class="node n2" data-key="perception" tabindex="0" role="button" aria-label="Perception" style="--c:var(--perception)">
+          <rect x="66" y="304" width="155" height="56" rx="11"/>
+          <text class="lbl" x="143" y="339" text-anchor="middle" font-size="24" textLength="128" lengthAdjust="spacingAndGlyphs">Perception</text>
+        </g>
+
+        <g class="node n5" data-key="tools" tabindex="0" role="button" aria-label="Tools and actions" style="--c:var(--tools)">
+          <rect x="499" y="304" width="156" height="56" rx="11"/>
+          <text class="lbl" x="577" y="339" text-anchor="middle" font-size="23" textLength="134" lengthAdjust="spacingAndGlyphs">Tools (Action)</text>
+        </g>
+
+        <!-- CHARACTERISTIC TAGS -->
+        <g class="tag t1" data-key="reflective" tabindex="0" role="button" aria-label="Reflective" style="--c:var(--reflective)">
+          <rect class="halo" x="86" y="44" width="120" height="34" rx="8" fill="none" stroke="var(--c)" stroke-width="2" stroke-dasharray="4 4"/>
+          <text class="tlbl" x="146" y="70" text-anchor="middle" font-size="25">Reflective</text>
+        </g>
+
+        <g class="tag t2" data-key="interactive" tabindex="0" role="button" aria-label="Interactive" style="--c:var(--interactive)">
+          <rect class="halo" x="512" y="44" width="130" height="34" rx="8" fill="none" stroke="var(--c)" stroke-width="2" stroke-dasharray="4 4"/>
+          <text class="tlbl" x="577" y="70" text-anchor="middle" font-size="25">Interactive</text>
+        </g>
+
+        <g class="tag t3" data-key="proactive" tabindex="0" role="button" aria-label="Proactive" style="--c:var(--proactive)">
+          <rect class="halo" x="78" y="576" width="140" height="52" rx="8" fill="none" stroke="var(--c)" stroke-width="2" stroke-dasharray="4 4"/>
+          <text class="tlbl" x="148" y="600" text-anchor="middle" font-size="25">Proactive</text>
+          <text class="tsub" x="148" y="620" text-anchor="middle" font-size="15">stimulus in real time</text>
+        </g>
+
+        <g class="tag t4" data-key="autonomous" tabindex="0" role="button" aria-label="Autonomous" style="--c:var(--autonomous)">
+          <rect class="halo" x="500" y="576" width="150" height="52" rx="8" fill="none" stroke="var(--c)" stroke-width="2" stroke-dasharray="4 4"/>
+          <text class="tlbl" x="577" y="600" text-anchor="middle" font-size="25">Autonomous</text>
+          <text class="tsub" x="577" y="620" text-anchor="middle" font-size="15">act independently</text>
+        </g>
+      </svg>
+
+      <div class="legend" aria-hidden="true">
+        <span><i style="border-color:var(--perception)"></i>Perception</span>
+        <span><i style="border-color:var(--planning)"></i>Planning</span>
+        <span><i style="border-color:var(--memory)"></i>Memory</span>
+        <span><i style="border-color:var(--tools)"></i>Tools</span>
+      </div>
+    </div>
+
+    <!-- PANEL -->
+    <aside class="panel" id="panel" aria-live="polite"></aside>
+  </div>
+
+  <footer class="note">
+    Part of <a href="https://github.com/Dolamu-TheDataGuy/AI-Agent-Build">AI-Agent-Build</a> — a from-scratch AI coding agent. Concepts adapted from my own study notes on AI agents.
+  </footer>
+</div>
+
+<script>
+  const PLACEHOLDER = `
+    <div class="pi"><p class="placeholder">
+      This is the <b>anatomy of an AI agent</b> — the same idea as the hand-drawn note, made explorable.<br><br>
+      The <b>brain</b> (the LLM) sits at the centre. Around it are the four faculties that turn a model which can only <i>talk</i> into an agent that can <i>act</i>: <b>Perception</b>, <b>Planning</b>, <b>Memory</b>, and <b>Tools</b>. The four outer traits — <b>Reflective</b>, <b>Interactive</b>, <b>Proactive</b>, <b>Autonomous</b> — describe how it behaves.<br><br>
+      Select a <b>faculty</b> to open up its internal parts and see which pieces are actually built in this repo.
+    </p></div>`;
+
+  const DATA = {
+    agent: {
+      color:'var(--agent)', kicker:'The brain', title:'AI Agent',
+      essence:'The reasoning core. On its own an LLM can understand language but can\u2019t touch the world. Wrapping it in perception, planning, memory, and tools turns that model into an agent \u2014 an "LLM with hands".',
+      repo:'In this repo, the brain is the <b>OpenRouter model</b> called inside <code>generate_content()</code> in <code>main.py</code>. Everything else exists to feed it input and carry out its decisions.'
+    },
+    perception: {
+      color:'var(--perception)', kicker:'Input \u00b7 faculty', title:'Perception',
+      essence:'How the agent takes in the world. Raw signals from the environment are turned into something the model can reason over.',
+      detail:{ kind:'flat',
+        items:[
+          {t:'Text', on:true, note:'user prompt + file text'},
+          {t:'Audio', on:false},
+          {t:'Images', on:false},
+          {t:'Other data forms', on:false}
+        ],
+        role:{ cap:'source', box:{t:'Environment', on:true, note:'the sandboxed codebase'} }
+      },
+      repo:'Perception here is the <b>user\u2019s prompt</b> plus file contents read with <code>get_files_info</code> and <code>get_file_content</code> \u2014 that\u2019s how the agent "sees" the codebase.'
+    },
+    planning: {
+      color:'var(--planning)', kicker:'Cognition \u00b7 faculty', title:'Planning',
+      essence:'The thinking step. The agent reflects, reasons, and breaks a goal into an ordered sequence of actions before it moves \u2014 all powered by the LLM.',
+      detail:{ kind:'flat',
+        items:[
+          {t:'Reflection', on:true},
+          {t:'Reasoning', on:true},
+          {t:'Decomposition', on:true}
+        ],
+        role:{ cap:'powered by', box:{t:'Large Language Model', on:true, note:'the reasoning engine'} }
+      },
+      repo:'The system prompt in <code>prompt.py</code> tells the model to build a <b>function-call plan</b> and take one step per loop. Each loop turn is a fresh round of planning over everything observed so far.'
+    },
+    memory: {
+      color:'var(--memory)', kicker:'State \u00b7 faculty', title:'Memory',
+      essence:'What the agent holds on to. Short-term memory keeps the current task in working context; long-term memory persists knowledge across sessions.',
+      detail:{ kind:'memory',
+        branches:[
+          {name:'Short-term', items:[
+            {t:'Cache', on:false},
+            {t:'Working memory', on:true, note:'the messages list'}
+          ]},
+          {name:'Long-term', items:[
+            {t:'Conversation store', on:false},
+            {t:'Episodic memory', on:false},
+            {t:'Data store', on:false},
+            {t:'Profiler', on:false},
+            {t:'Knowledge base', on:false}
+          ]}
+        ],
+        extra:{ name:'Backing store', box:{t:'Database', on:false} }
+      },
+      repo:'This build uses <b>short-term / working memory only</b> \u2014 the accumulating <code>messages</code> list within a single run. Every long-term piece above is a natural next extension.'
+    },
+    tools: {
+      color:'var(--tools)', kicker:'Action \u00b7 faculty', title:'Tools',
+      essence:'The hands. Tools let the agent reach out of its own head and change something \u2014 read data, call an API, run code \u2014 then feed the result back in.',
+      detail:{ kind:'flat',
+        items:[
+          {t:'Knowledge retrieval', on:true, note:'reads files'},
+          {t:'Web search', on:false},
+          {t:'API calls', on:false},
+          {t:'System components', on:true, note:'runs python'},
+          {t:'Functions', on:true, note:'the 4 tools'}
+        ]
+      },
+      repo:'Four functions give this agent its reach: <code>get_files_info</code>, <code>get_file_content</code>, <code>write_file</code>, and <code>run_python_file</code> \u2014 registered and dispatched by <code>call_function()</code> in <code>call_functions.py</code>.'
+    },
+    reflective: {
+      color:'var(--reflective)', kicker:'Trait', title:'Reflective',
+      essence:'The agent can look back at its own output, judge whether it worked, and adjust its next move instead of blindly pressing on.',
+      repo:'The loop feeds each tool result back into the model, so it can react to failures on the next turn \u2014 e.g. read an error from <code>run_python_file</code> and try a fix.'
+    },
+    interactive: {
+      color:'var(--interactive)', kicker:'Trait', title:'Interactive',
+      essence:'The agent communicates \u2014 with people and with other systems \u2014 rather than running as a closed black box.',
+      repo:'It takes a prompt from the user and reports back a final answer (with <code>--verbose</code> exposing every step in between).'
+    },
+    proactive: {
+      color:'var(--proactive)', kicker:'Trait', title:'Proactive',
+      essence:'It responds to stimulus in real time and takes the initiative \u2014 acting without needing every micro-step spelled out.',
+      repo:'Told only <i>what</i> to achieve, it decides to scan the directory, read files, and run tests on its own \u2014 you never hand it a step-by-step script.'
+    },
+    autonomous: {
+      color:'var(--autonomous)', kicker:'Trait', title:'Autonomous',
+      essence:'It acts independently toward a goal, chaining decisions and actions until the task is done or a safety limit is reached.',
+      repo:'"Don\u2019t ask me where the code is \u2014 go look for it." The agent explores and edits on its own, bounded only by <code>MAX_ITERS</code> and its sandboxed working directory.'
+    }
+  };
+
+  const panel = document.getElementById('panel');
+  const svg = document.querySelector('svg.diagram');
+  const items = Array.from(document.querySelectorAll('.node, .tag'));
+  const conns = Array.from(document.querySelectorAll('.conn'));
+
+  const dot = on => `<span class="sdot ${on?'on':'off'}" aria-hidden="true"></span>`;
+  const box = it => `<div class="subbox ${it.on?'on':'off'}">${dot(it.on)}<span class="txt">${it.t}</span>${it.note?`<em>${it.note}</em>`:''}</div>`;
+
+  function detailHTML(d){
+    if(!d) return '';
+    let inner = '';
+    if(d.kind === 'flat'){
+      inner = `<div class="subgrid">${d.items.map(box).join('')}</div>`;
+      if(d.role){
+        inner += `<div class="subrole"><div class="cap">${d.role.cap}</div><div class="subgrid">${box(d.role.box)}</div></div>`;
+      }
+    } else if(d.kind === 'memory'){
+      inner = d.branches.map(b =>
+        `<div class="submeta">${b.name}</div><div class="subgrid">${b.items.map(box).join('')}</div>`
+      ).join('');
+      if(d.extra){
+        inner += `<div class="submeta">${d.extra.name}</div><div class="subgrid">${box(d.extra.box)}</div>`;
+      }
+    }
+    return `
+      <div class="lead-in">What it's made of</div>
+      <div class="subwrap">${inner}</div>
+      <div class="sublegend">
+        <span>${dot(true)} built in this repo</span>
+        <span>${dot(false)} conceptual / roadmap</span>
+      </div>`;
+  }
+
+  function render(key){
+    const d = DATA[key];
+    if(!d) return;
+    panel.style.setProperty('--pc', d.color);
+    panel.innerHTML = `
+      <div class="pi">
+        <span class="kicker">${d.kicker}</span>
+        <h2>${d.title}</h2>
+        <p class="essence">${d.essence}</p>
+        ${detailHTML(d.detail)}
+        <div class="lead-in">In this repo</div>
+        <div class="repo">${d.repo}</div>
+      </div>`;
+  }
+
+  function select(el){
+    const key = el.getAttribute('data-key');
+    items.forEach(n => n.classList.toggle('sel', n === el));
+    conns.forEach(c => c.classList.toggle('hot', c.dataset.key === key));
+    svg.classList.add('has-sel');
+    render(key);
+    if(window.innerWidth <= 880){
+      panel.scrollIntoView({behavior:'smooth', block:'start'});
+    }
+  }
+
+  function clearSel(){
+    items.forEach(n => n.classList.remove('sel'));
+    conns.forEach(c => c.classList.remove('hot'));
+    svg.classList.remove('has-sel');
+    panel.innerHTML = PLACEHOLDER;
+  }
+
+  items.forEach(el=>{
+    el.addEventListener('click', ()=>select(el));
+    el.addEventListener('keydown', e=>{
+      if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); select(el); }
+    });
+  });
+  document.getElementById('reset').addEventListener('click', clearSel);
+
+  clearSel();
+</script>
+</body>
+</html>
