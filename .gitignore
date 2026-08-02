@@ -8,3 +8,4 @@ Dockerfile
 compose.yaml
 .dockerignore
 Openai.py
+response.json
