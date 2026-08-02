@@ -73,7 +73,7 @@ This repo is a concrete, readable implementation of exactly that sentence.
  
 An AI agent is best pictured as a **brain wrapped in four faculties**. The foundation model (the brain) sits at the centre; around it, four components let it sense, think, remember, and act — and four outer traits describe how it behaves.
  
-> 🔎 **Explore it interactively: [Anatomy of an AI Agent](https://dolamu-thedataguy.github.io/AI-Agent-Build/agent-anatomy.html)
+> 🔎 **Explore it interactively**: [Anatomy of an AI Agent](https://dolamu-thedataguy.github.io/AI-Agent-Build/agent-anatomy.html)
  
 The static version below renders inline on GitHub:
 
